@@ -793,7 +793,7 @@ kiwi_ss_h kiwi_split_into_sents(kiwi_h handle, const char* text, int matchOption
 	}
 }
 
-DECL_DLL kiwi_joiner_h kiwi_new_joiner(kiwi_h handle, int lm_search)
+KIWI_API kiwi_joiner_h kiwi_new_joiner(kiwi_h handle, int lm_search)
 {
 	if (!handle) return nullptr;
 	Kiwi* kiwi = (Kiwi*)handle;
