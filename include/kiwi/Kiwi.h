@@ -10,6 +10,24 @@
 #pragma once
 
 #include <iostream>
+
+#ifndef KIWI_API
+#  if defined(_WIN32) || defined(__CYGWIN__)
+#    ifdef KIWI_EXPORTS
+#      define KIWI_API __declspec(dllexport)
+#    else
+#      define KIWI_API __declspec(dllimport)
+#    endif
+#  elif defined(__GNUC__)
+#    ifdef KIWI_EXPORTS
+#      define KIWI_API __attribute__((visibility("default")))
+#    else
+#      define KIWI_API
+#    endif
+#  else
+#    define KIWI_API
+#  endif
+#endif
 #include <future>
 #include <string>
 #include <string_view>
@@ -69,7 +87,7 @@ namespace kiwi
 	 * @brief 실제 형태소 분석을 수행하는 클래스.
 	 * 
 	 */
-	class Kiwi
+class KIWI_API Kiwi
 	{
 		friend class KiwiBuilder;
 		template<class LangModel> friend struct BestPathFinder;
@@ -535,7 +553,7 @@ namespace kiwi
 	 * 사전을 바탕으로 실제 형태소 분석을 수행하는 Kiwi의 인스턴스를 생성하는 클래스.
 	 * 
 	 */
-	class KiwiBuilder
+class KIWI_API KiwiBuilder
 	{
 		Vector<FormRaw> forms;
 		Vector<MorphemeRaw> morphemes;

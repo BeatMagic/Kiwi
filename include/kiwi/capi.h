@@ -17,12 +17,22 @@
 #define KIWIERR_INVALID_HANDLE -2
 #define KIWIERR_INVALID_INDEX -3
 
-#if !defined(DLL_EXPORT)
-#define DECL_DLL
-#elif defined(_MSC_VER)
-#define DECL_DLL __declspec(dllexport)
-#elif defined(__GNUC__)
-#define DECL_DLL __attribute__((visibility("default")))
+#ifndef DECL_DLL
+#  if defined(_WIN32) || defined(__CYGWIN__)
+#    ifdef KIWI_EXPORTS
+#      define DECL_DLL __declspec(dllexport)
+#    else
+#      define DECL_DLL __declspec(dllimport)
+#    endif
+#  elif defined(__GNUC__)
+#    ifdef KIWI_EXPORTS
+#      define DECL_DLL __attribute__((visibility("default")))
+#    else
+#      define DECL_DLL
+#    endif
+#  else
+#    define DECL_DLL
+#  endif
 #endif
 
 typedef struct kiwi_s* kiwi_h;

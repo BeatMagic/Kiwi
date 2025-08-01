@@ -232,12 +232,16 @@ add_library( "${PROJECT_NAME}_static" STATIC
   ${STREAMVBYTE_OBJECTS}
 )
 
+
 add_library( "${PROJECT_NAME}" SHARED
   ${CORE_SRCS}
   src/capi/kiwi_c.cpp
   ${CPUINFO_OBJECTS_SHARED}
   ${STREAMVBYTE_OBJECTS}
 )
+
+# Ensure KIWI_EXPORTS is defined when building the DLL
+target_compile_definitions("${PROJECT_NAME}" PRIVATE KIWI_EXPORTS)
 
 # Install the kiwi library as well as header files to (`include/kiwi` directory)
 # so that a user can use it in their own projects that are not cmake projects.
@@ -333,9 +337,7 @@ if(UNIX AND NOT APPLE)
   endif()
 endif()
 
-target_compile_definitions("${PROJECT_NAME}"
-  PUBLIC DLL_EXPORT=1
-)
+# Remove DLL_EXPORT, now using KIWI_EXPORTS for import/export
 
 if(KIWI_BUILD_TEST)
   add_subdirectory( third_party/googletest )
