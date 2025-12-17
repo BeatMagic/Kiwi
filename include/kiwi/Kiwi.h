@@ -16,6 +16,7 @@
 #include <string>
 #include <string_view>
 #include <optional>
+#include "DllApiExport.h"
 #include "Macro.h"
 #include "Types.h"
 #include "Form.h"
@@ -115,9 +116,9 @@ namespace kiwi
 
 	/**
 	 * @brief 실제 형태소 분석을 수행하는 클래스.
-	 * 
+	 *
 	 */
-	class Kiwi
+	class KIWI_API Kiwi
 	{
 		friend class KiwiBuilder;
 		template<class LangModel> friend struct BestPathFinder;
@@ -527,11 +528,11 @@ namespace kiwi
 	};
 
 	/**
-	 * @brief 형태소 분석에 사용될 사전을 관리하고, 
+	 * @brief 형태소 분석에 사용될 사전을 관리하고,
 	 * 사전을 바탕으로 실제 형태소 분석을 수행하는 Kiwi의 인스턴스를 생성하는 클래스.
-	 * 
+	 *
 	 */
-	class KiwiBuilder
+	class KIWI_API KiwiBuilder
 	{
 		Vector<FormRaw> forms;
 		Vector<MorphemeRaw> morphemes;

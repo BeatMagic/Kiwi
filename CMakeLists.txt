@@ -348,8 +348,11 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
 endif()
 
 if(KIWI_BUILD_DYNAMIC)
+  # Define KIWI_EXPORTS when building the DLL so that KIWI_API exports symbols.
+  # PRIVATE ensures consumers of the library don't get this definition,
+  # allowing KIWI_API to be dllimport for them.
   target_compile_definitions("${PROJECT_NAME}"
-    PUBLIC DLL_EXPORT=1
+    PRIVATE KIWI_EXPORTS
   )
 endif()
 

@@ -9,6 +9,7 @@
  */
 #pragma once
 
+#include "DllApiExport.h"
 #include "Types.h"
 #include "Trie.hpp"
 #include "FrozenTrie.h"
@@ -20,7 +21,7 @@ namespace kiwi
 	class TypoIterator;
 
 	template<bool u16wrap>
-	class TypoCandidates
+	class KIWI_API TypoCandidates
 	{
 		friend class TypoTransformer;
 		friend class PreparedTypoTransformer;
@@ -65,7 +66,7 @@ namespace kiwi
 	};
 
 	template<bool u16wrap>
-	class TypoIterator
+	class KIWI_API TypoIterator
 	{
 		const TypoCandidates<u16wrap>* cands = nullptr;
 		Vector<size_t> digit;
@@ -130,7 +131,7 @@ namespace kiwi
 	/**
 	* @brief 오타 생성 및 교정 준비가 완료된 오타 생성기. kiwi::TypoTransformer::prepare()로부터 생성됩니다.
 	*/
-	class PreparedTypoTransformer
+	class KIWI_API PreparedTypoTransformer
 	{
 		friend class KiwiBuilder;
 
@@ -222,7 +223,7 @@ namespace kiwi
 	/**
 	* @brief 오타 교정에 사용되는 오타 생성기 정의자
 	*/
-	class TypoTransformer
+	class KIWI_API TypoTransformer
 	{
 		friend class KiwiBuilder;
 		friend class PreparedTypoTransformer;
@@ -396,7 +397,7 @@ namespace kiwi
 		}
 	};
 
-	enum class DefaultTypoSet
+	enum class KIWI_API DefaultTypoSet
 	{
 		withoutTypo,
 		basicTypoSet,
@@ -409,8 +410,8 @@ namespace kiwi
 
 	/**
 	* @brief 기본 내장 오타 생성기를 반환합니다.
-	* 
+	*
 	* @param set 사용할 기본 내장 오타 생성기의 종류
 	*/
-	const TypoTransformer& getDefaultTypoSet(DefaultTypoSet set);
+	KIWI_API const TypoTransformer& getDefaultTypoSet(DefaultTypoSet set);
 }
