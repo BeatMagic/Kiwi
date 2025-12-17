@@ -316,6 +316,11 @@ namespace kiwi
 		ARCH_TARGET("sse2")
 		inline bool nstSearchSSE2(const IntTy* keys, size_t size, IntTy target, size_t& ret)
 		{
+			if (size < n - 1)
+			{
+				return bstSearch(keys, size, target, ret);
+			}
+
 			size_t i = 0, r;
 
 			__m128i ptarget, pkey, peq, pgt;
