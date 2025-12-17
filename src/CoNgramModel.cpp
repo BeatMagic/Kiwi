@@ -1020,7 +1020,7 @@ namespace kiwi
 						const auto historyToken = prevStates[i].history[j];
 						if (!historyToken) continue;
 						const auto idx = i * windowSize + j;
-						auto inserted = tls.historyMap.emplace(historyToken, tls.historyMap.size());
+						auto inserted = tls.historyMap.emplace(historyToken, static_cast<uint32_t>(tls.historyMap.size()));
 						tls.inverseHistoryIdcs[idx] = inserted.first->second;
 						if (inserted.second) tls.uniqHistoryTokens.emplace_back(historyToken);
 					}

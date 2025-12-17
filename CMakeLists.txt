@@ -266,6 +266,10 @@ endif()
 
 target_compile_options("${PROJECT_NAME}_static" PRIVATE "${ADDITIONAL_FLAGS}")
 
+# Define KIWI_STATIC for static library builds to ensure KIWI_API is empty
+# (neither dllexport nor dllimport)
+target_compile_definitions("${PROJECT_NAME}_static" PRIVATE KIWI_STATIC)
+
 #target_link_libraries("${PROJECT_NAME}_static" cpuinfo_internals)
 #target_link_libraries("${PROJECT_NAME}" cpuinfo)
 
@@ -309,6 +313,7 @@ if(MSVC)
       ${CPUINFO_OBJECTS_STATIC}
     )
 
+    target_compile_definitions("${PROJECT_NAME}_mt_static" PRIVATE KIWI_STATIC)
     target_compile_options("${PROJECT_NAME}_mt_static" PUBLIC
       /MT
     )
