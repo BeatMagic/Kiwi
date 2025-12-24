@@ -11,6 +11,10 @@
 #pragma intrinsic(_BitScanReverse64)
 #endif
 
+#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+#include <cpuid.h>
+#endif
+
 #if defined(__SSE2__) || defined(__AVX2__)
 	#include <immintrin.h>
 #endif
@@ -114,6 +118,74 @@ namespace kiwi
 		inline int ceilLog2(uint64_t v) { return 64 - countLeadingZeroes(v - 1); }
 
 
+		// Software popcount implementation that doesn't require POPCNT instruction
+		// Use this for SSE2-only code paths where POPCNT may not be available
+		inline uint32_t popcountSoftware(uint32_t v)
+		{
+			v = v - ((v >> 1) & 0x55555555u);
+			v = (v & 0x33333333u) + ((v >> 2) & 0x33333333u);
+			return ((v + (v >> 4) & 0x0F0F0F0Fu) * 0x01010101u) >> 24;
+		}
+
+		inline uint64_t popcountSoftware(uint64_t v)
+		{
+			return popcountSoftware((uint32_t)(v & 0xFFFFFFFF)) + popcountSoftware((uint32_t)(v >> 32));
+		}
+
+		// Runtime detection for POPCNT support (cached)
+		inline bool hasPopcnt()
+		{
+			static int cached = -1;
+			if (cached < 0)
+			{
+#if defined(_MSC_VER)
+				int cpuInfo[4];
+				__cpuid(cpuInfo, 1);
+				cached = (cpuInfo[2] & (1 << 23)) ? 1 : 0; // POPCNT is bit 23 of ECX
+#elif defined(__GNUC__)
+				unsigned int eax, ebx, ecx, edx;
+				if (__get_cpuid(1, &eax, &ebx, &ecx, &edx))
+				{
+					cached = (ecx & (1 << 23)) ? 1 : 0;
+				}
+				else
+				{
+					cached = 0;
+				}
+#else
+				cached = 0;
+#endif
+			}
+			return cached != 0;
+		}
+
+		// Runtime-dispatched popcount: uses hardware POPCNT if available, software fallback otherwise
+		inline uint32_t popcountRuntime(uint32_t v)
+		{
+			if (hasPopcnt())
+			{
+#if defined(_MSC_VER)
+				return __popcnt(v);
+#elif defined(__GNUC__)
+				return __builtin_popcount(v);
+#endif
+			}
+			return popcountSoftware(v);
+		}
+
+		inline uint64_t popcountRuntime(uint64_t v)
+		{
+			if (hasPopcnt())
+			{
+#if defined(_MSC_VER) && defined(_M_X64)
+				return __popcnt64(v);
+#elif defined(__GNUC__)
+				return __builtin_popcountll(v);
+#endif
+			}
+			return popcountSoftware(v);
+		}
+
 		inline uint32_t popcount(uint32_t v)
 		{
 #if defined(__GNUC__)
@@ -121,7 +193,7 @@ namespace kiwi
 #elif defined(_MSC_VER)
 			return __popcnt(v);
 #else
-			throw "";
+			return popcountSoftware(v);
 #endif
 		}
 
@@ -132,7 +204,7 @@ namespace kiwi
 #elif defined(_MSC_VER) && defined(_M_X64)
 			return __popcnt64(v);
 #else
-			return popcount((uint32_t)(v & 0xFFFFFFFF)) + popcount((uint32_t)(v >> 32));
+			return popcountSoftware(v);
 #endif
 		}
 

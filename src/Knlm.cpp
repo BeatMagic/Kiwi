@@ -46,6 +46,12 @@ namespace kiwi
 		float KnLangModel<arch, KeyType, transposed, DiffType>::progress(IdxType& node_idx, KeyType next) const
 		{
 			float acc = 0;
+			// Bounds check: if next is out of vocabulary range, treat as unknown word
+			if (next >= getHeader().vocab_size)
+			{
+				node_idx = 0;
+				return unk_ll;
+			}
 			while (1)
 			{
 				DiffType v;
