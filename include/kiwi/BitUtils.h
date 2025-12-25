@@ -138,11 +138,11 @@ namespace kiwi
 			static int cached = -1;
 			if (cached < 0)
 			{
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
 				int cpuInfo[4];
 				__cpuid(cpuInfo, 1);
 				cached = (cpuInfo[2] & (1 << 23)) ? 1 : 0; // POPCNT is bit 23 of ECX
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
 				unsigned int eax, ebx, ecx, edx;
 				if (__get_cpuid(1, &eax, &ebx, &ecx, &edx))
 				{
@@ -152,6 +152,9 @@ namespace kiwi
 				{
 					cached = 0;
 				}
+#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_M_ARM64)
+				// ARM NEON always has equivalent of popcount via VCNT instruction
+				cached = 1;
 #else
 				cached = 0;
 #endif
