@@ -1,4 +1,5 @@
 ﻿#include <cassert>
+#include <filesystem>
 #include <fstream>
 #include <kiwi/Utils.h>
 #include <kiwi/Mmap.h>
@@ -609,7 +610,8 @@ namespace kiwi
 		{
 			return [modelPath](const std::string& filename) -> std::unique_ptr<std::istream> {
 				std::string fullPath = modelPath + "/" + filename;
-				auto stream = std::make_unique<std::ifstream>(fullPath, std::ios::binary);
+				// Use std::filesystem::u8path to properly handle UTF-8 paths on Windows
+				auto stream = std::make_unique<std::ifstream>(std::filesystem::u8path(fullPath), std::ios::binary);
 				if (!stream->is_open()) {
 					return nullptr;
 				}

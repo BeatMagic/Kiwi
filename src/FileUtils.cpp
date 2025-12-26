@@ -1,9 +1,8 @@
-#include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <kiwi/Types.h>
 #include <kiwi/Utils.h>
-#include "StrUtils.h"
 
 using namespace std;
 
@@ -15,11 +14,8 @@ namespace kiwi
 		f.exceptions(ifstream::failbit | ifstream::badbit);
 		try
 		{
-#if defined(_WIN32) || defined(_WIN64)
-			f.open((const wchar_t*)utf8To16(filePath).c_str(), mode);
-#else
-			f.open(filePath, mode);
-#endif
+			// Use std::filesystem::u8path to properly handle UTF-8 paths on Windows
+			f.open(std::filesystem::u8path(filePath), mode);
 		}
 		catch (const ios_base::failure&)
 		{
@@ -35,11 +31,8 @@ namespace kiwi
 		f.exceptions(ofstream::failbit | ofstream::badbit);
 		try
 		{
-#if defined(_WIN32) || defined(_WIN64)
-			f.open((const wchar_t*)utf8To16(filePath).c_str(), mode);
-#else
-			f.open(filePath, mode);
-#endif
+			// Use std::filesystem::u8path to properly handle UTF-8 paths on Windows
+			f.open(std::filesystem::u8path(filePath), mode);
 		}
 		catch (const ios_base::failure&)
 		{

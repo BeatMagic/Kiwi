@@ -10,6 +10,9 @@ This is ACE Studio's patch fork of [Kiwi](https://github.com/bab2min/Kiwi) (Kore
 
 - **C++ DLL import/export for Windows**: Upstream only provides C API DLL exports; this fork adds proper import/export macros for C++ APIs
 - **Crash fixes**: Fixed crashes in `KnLangModel` and `nstSearchSSE2` on SSE2 architectures, and `hasPopcnt()` compilation errors on ARM
+- **UTF-8 path handling on Windows**: Fixed `makeFilesystemProvider` and `openFile` in `src/Utils.cpp` and `src/FileUtils.cpp` to use `std::filesystem::u8path()` for proper UTF-8 path support on Windows (upstream uses raw `std::ifstream` which fails with non-ASCII paths)
+
+> **Note for upstream updates**: When rebasing onto a new upstream version, verify if these patches is still needed. The upstream code may regress these fixes.
 
 ## Build Commands
 
