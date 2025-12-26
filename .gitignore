@@ -353,3 +353,11 @@ models/
 CMakeFiles/
 Makefile
 *.cmake
+
+# ACE Studio build artifacts
+build-arm/
+build-x86/
+libkiwi.*.dylib
+
+# Claude Code
+.claude/
