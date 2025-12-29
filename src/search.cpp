@@ -160,6 +160,19 @@ namespace kiwi
 			return false;
 		}
 
+		// Linear search for small arrays - used as fallback when SIMD would read OOB
+		template<class KeyTy>
+		bool linearSearch(const KeyTy* keys, size_t size, KeyTy target, size_t& ret)
+		{
+			const KeyTy* found = std::find(keys, keys + size, target);
+			if (found != keys + size)
+			{
+				ret = found - keys;
+				return true;
+			}
+			return false;
+		}
+
 		template<ArchType arch> struct OptimizedImpl;
 
 		template<ArchType arch, class IntTy>
@@ -318,7 +331,7 @@ namespace kiwi
 		{
 			if (size < n - 1)
 			{
-				return bstSearch(keys, size, target, ret);
+				return linearSearch(keys, size, target, ret);
 			}
 
 			size_t i = 0, r;
