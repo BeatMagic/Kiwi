@@ -36,6 +36,7 @@ make -j$(nproc)
 - `KIWI_BUILD_TEST` - Build test suite (default: ON)
 - `KIWI_BUILD_CLI` - Build CLI tool (default: ON)
 - `KIWI_JAVA_BINDING` - Build Java binding (default: OFF)
+- `KIWI_CPU_ARCH` - Override CPU architecture for SIMD selection (required for cross-compilation, e.g., `x86_64` or `arm64`)
 
 ### Windows
 ```bash
@@ -46,7 +47,9 @@ cmake --build . --config RelWithDebInfo
 
 ### macOS Universal Binary (for ACE Studio)
 
-Build for both architectures with deployment target 13.0, then combine with lipo:
+Build for both architectures with deployment target 13.0, then combine with lipo.
+
+> **Important**: When cross-compiling for x86_64 on Apple Silicon, you must explicitly set `-DKIWI_CPU_ARCH=x86_64`. This is because `CMAKE_SYSTEM_PROCESSOR` always returns the host architecture (`arm64`), but Kiwi's CMakeLists.txt uses this to select architecture-specific SIMD implementations. Without this flag, the x86_64 build will incorrectly use ARM NEON code paths.
 
 ```bash
 # Build for ARM64
@@ -58,11 +61,12 @@ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 make -j$(sysctl -n hw.ncpu)
 cd ..
 
-# Build for x86_64
+# Build for x86_64 (note: KIWI_CPU_ARCH is required for cross-compilation)
 mkdir build-x86 && cd build-x86
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_OSX_ARCHITECTURES=x86_64 \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+      -DKIWI_CPU_ARCH=x86_64 \
       ../
 make -j$(sysctl -n hw.ncpu)
 cd ..
@@ -161,3 +165,4 @@ kiwi_res_h result = kiwi_analyze(kiwi, text);
 - Use `KIWI_ARCH_TYPE` environment variable to override CPU architecture detection
 - POS tags follow Sejong corpus conventions with extensions (W_URL, W_EMAIL, W_HASHTAG, etc.)
 - Irregular forms marked with `-R` (regular) and `-I` (irregular) suffixes
+- **Always run tests after patching**: When modifying any logic-related code (especially in `src/`, `src/archImpl/`, or language model files), always build and run the full test suite (`kiwi-test`) before committing to catch regressions early
