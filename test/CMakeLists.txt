@@ -25,6 +25,7 @@ else()
   #target_link_libraries(kiwi-test -Wl,--whole-archive -lpthread -Wl,--no-whole-archive)
 endif()
 target_link_libraries(kiwi-test "${CMAKE_PROJECT_NAME}_static")
+target_compile_definitions(kiwi-test PRIVATE KIWI_STATIC)
 
 ##################################
 # Just make the test runnable with
