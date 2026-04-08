@@ -7,7 +7,6 @@ set ( CMAKE_VERBOSE_MAKEFILE true )
 
 option(KIWI_USE_MIMALLOC  "Use mimalloc for faster memory allocation" ON)
 option(KIWI_USE_CPUINFO  "Use cpuinfo for dynamic CPU dispatching" ON)
-option(KIWI_STATIC_WITHOUT_MT  "Use /MT Option in building kiwi_static" OFF)
 option(KIWI_BUILD_DYNAMIC  "Build dynamic library" ON)
 option(KIWI_BUILD_CLI  "Build CLI tool" ON)
 option(KIWI_BUILD_EVALUATOR  "Build Evaluator" ON)
@@ -15,6 +14,7 @@ option(KIWI_BUILD_MODEL_BUILDER  "Build Model Builder" ON)
 option(KIWI_BUILD_TEST  "Build Test sets" ON)
 option(KIWI_JAVA_BINDING  "Build Java binding" OFF)
 set(KIWI_CPU_ARCH "" CACHE STRING "Set architecture type for macOS")
+
 
 if (NOT CMAKE_BUILD_TYPE)
   if ("${CMAKE_BINARY_DIR}" MATCHES ".*(D|d)ebug$")
@@ -118,14 +118,6 @@ if(KIWI_USE_CPUINFO)
 
   set ( ADDITIONAL_FLAGS ${ADDITIONAL_FLAGS} "-DKIWI_USE_CPUINFO" )
 
-  if(MSVC)
-    target_compile_options("cpuinfo" PUBLIC
-      /MT
-    )
-    target_compile_options("cpuinfo_internals" PUBLIC
-      /MT
-    )
-  endif()
 
   set ( CPUINFO_OBJECTS_STATIC 
     $<TARGET_OBJECTS:cpuinfo_internals>
@@ -140,40 +132,31 @@ if (AVX_VNNI_SUPPORTED)
   set ( ADDITIONAL_FLAGS ${ADDITIONAL_FLAGS} "-DKIWI_AVX_VNNI_SUPPORTED" )
 endif()
 
+# Let CMake handle defaults (runtime library, optimization, debug info, NDEBUG).
+# Only add kiwi-specific extras on top.
 if(MSVC)
-  set ( CMAKE_C_FLAGS_DEBUG "-DDEBUG -DC_FLAGS -Zi -Od /utf-8 /bigobj" )
-  set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}" )
-
-  set ( CMAKE_C_FLAGS_RELEASE "-DNDEBUG -DRELEASE -DC_FLAGS -O2 -Oi -Gy /utf-8 /bigobj -DKIWI_USE_BTREE" )
-  set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" )
-
-  set ( CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} -Zi")
-  set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-  set ( CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" )
+  add_compile_options(/utf-8 /bigobj)
+  add_compile_options(
+    $<$<CONFIG:Debug>:-DDEBUG>
+    $<$<NOT:$<CONFIG:Debug>>:-Oi>
+    $<$<NOT:$<CONFIG:Debug>>:-Gy>
+    $<$<NOT:$<CONFIG:Debug>>:-DKIWI_USE_BTREE>
+  )
 else()
   if(NOT ANDROID)
-    link_libraries ( pthread )
+    link_libraries(pthread)
   endif()
-
-  set ( CMAKE_C_FLAGS_DEBUG "-DDEBUG -DC_FLAGS -g3 -O0" )
-  set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}" )
-  set ( CMAKE_EXE_LINKER_FLAGS_DEBUG "-DDEBUG -DLINKER_FLAGS" )
 
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
   set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-  set ( CMAKE_C_FLAGS_RELEASE "-DNDEBUG -DRELEASE -DC_FLAGS -O3 -DKIWI_USE_BTREE" )
-  set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" )
-  set ( CMAKE_EXE_LINKER_FLAGS_RELEASE "-DRELEASE -DLINKER_FLAGS" )
+  add_compile_options(
+    $<$<CONFIG:Debug>:-DDEBUG>
+    $<$<NOT:$<CONFIG:Debug>>:-DKIWI_USE_BTREE>
+  )
 
-  set ( CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} -g")
-  set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-  set ( CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" )
-
-  if (APPLE)
-    set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unqualified-std-cast-call" )
-    set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-unqualified-std-cast-call" )
-    set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -Wno-unqualified-std-cast-call" )
+  if(APPLE)
+    add_compile_options(-Wno-unqualified-std-cast-call)
   endif()
 endif()
 
@@ -304,35 +287,6 @@ if (KIWI_BUILD_MODEL_BUILDER)
   )
 endif()
 
-if(MSVC)
-  if(KIWI_STATIC_WITHOUT_MT)
-    message(STATUS "Use /MD at kiwi_static")
-    add_library( "${PROJECT_NAME}_mt_static" STATIC
-      ${CORE_SRCS}
-      src/capi/kiwi_c.cpp
-      ${CPUINFO_OBJECTS_STATIC}
-    )
-
-    target_compile_definitions("${PROJECT_NAME}_mt_static" PRIVATE KIWI_STATIC)
-    target_compile_options("${PROJECT_NAME}_mt_static" PUBLIC
-      /MT
-    )
-  else()
-    message(STATUS "Use /MT at kiwi_static")
-    target_compile_options("${PROJECT_NAME}_static" PUBLIC
-      /MT
-    )
-    target_compile_options("streamvbyte" PUBLIC
-      /MT
-    )
-  endif()
-
-  if(KIWI_BUILD_DYNAMIC)
-    target_compile_options("${PROJECT_NAME}" PUBLIC
-      /MT
-    )
-  endif()
-endif()
 
 if(UNIX AND NOT APPLE AND NOT ANDROID)
   target_link_libraries( "${PROJECT_NAME}_static"
@@ -364,14 +318,6 @@ endif()
 if(KIWI_BUILD_TEST)
   add_subdirectory( third_party/googletest )
   add_subdirectory( test )
-  if(MSVC)
-    target_compile_options("gtest_main" PUBLIC
-      /MT
-    )
-    target_compile_options("gtest" PUBLIC
-      /MT
-    )
-  endif()
 endif()
 
 if(KIWI_JAVA_BINDING)
