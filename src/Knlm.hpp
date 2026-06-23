@@ -66,7 +66,7 @@ namespace kiwi
 			static void dequantizeDispatch(
 				tp::seq<idx...>,
 				size_t bits,
-				Vector<float>& restored_floats, Vector<float>& restored_leaf_ll,
+				float* restored_floats, float* restored_leaf_ll,
 				const char* llq_data, size_t llq_size,
 				const char* gammaq_data, size_t gammaq_size,
 				const float* ll_table,
@@ -396,7 +396,7 @@ namespace kiwi
 
 		template<size_t bits>
 		inline void dequantize(
-			Vector<float>& restored_floats, Vector<float>& restored_leaf_ll,
+			float* restored_floats, float* restored_leaf_ll,
 			const char* llq_data, size_t llq_size,
 			const char* gammaq_data, size_t gammaq_size,
 			const float* ll_table,
@@ -426,7 +426,7 @@ namespace kiwi
 
 		template<>
 		inline void dequantize<8>(
-			Vector<float>& restored_floats, Vector<float>& restored_leaf_ll,
+			float* restored_floats, float* restored_leaf_ll,
 			const char* llq_data, size_t llq_size,
 			const char* gammaq_data, size_t gammaq_size,
 			const float* ll_table,
@@ -973,7 +973,7 @@ namespace kiwi
 		void KnLangModel<arch, KeyType, transposed, DiffType>::dequantizeDispatch(
 			tp::seq<idx...>,
 			size_t bits,
-			Vector<float>& restored_floats, Vector<float>& restored_leaf_ll,
+			float* restored_floats, float* restored_leaf_ll,
 			const char* llq_data, size_t llq_size,
 			const char* gammaq_data, size_t gammaq_size,
 			const float* ll_table,
@@ -982,7 +982,7 @@ namespace kiwi
 			size_t num_leaf_nodes
 		)
 		{
-			using Fn = void(*)(Vector<float>&, Vector<float>&,
+			using Fn = void(*)(float*, float*,
 				const char*, size_t,
 				const char*, size_t,
 				const float*,
@@ -1008,18 +1008,18 @@ namespace kiwi
 			const size_t quantized = header.quantized & 0x1F;
 			const bool compressed = header.quantized & 0x80;
 
-			Vector<KeyType> d_node_size;
+			std::unique_ptr<KeyType[]> d_node_size;
 			auto* node_sizes = reinterpret_cast<const KeyType*>(ptr + header.node_offset);
 			key_data = make_unique<KeyType[]>((header.ll_offset - header.key_offset) / sizeof(KeyType));
 			std::memcpy(&key_data[0], ptr + header.key_offset, header.ll_offset - header.key_offset);
 			size_t num_leaf_nodes = 0;
 			if (compressed)
 			{
-				d_node_size.resize(header.num_nodes);
+				d_node_size = make_unique<KeyType[]>(header.num_nodes);
 				auto qc_header = reinterpret_cast<const uint8_t*>(ptr + header.node_offset);
 				auto qc_body = reinterpret_cast<const size_t*>(qc_header + (header.num_nodes + 3) / 4);
-				QCode::template decode<8>((uint16_t*)d_node_size.data(), qc_header, qc_body, 0, header.num_nodes);
-				node_sizes = d_node_size.data();
+				QCode::template decode<8>((uint16_t*)d_node_size.get(), qc_header, qc_body, 0, header.num_nodes);
+				node_sizes = d_node_size.get();
 			}
 
 			for (size_t i = 0; i < header.num_nodes; ++i)
@@ -1029,7 +1029,7 @@ namespace kiwi
 			}
 
 			// restore ll & gamma data
-			Vector<float> restored_leaf_ll, restored_floats;
+			std::unique_ptr<float[]> restored_leaf_ll, restored_floats;
 			const float* ll_data = nullptr;
 			const float* gamma_data = nullptr;
 			const float* leaf_ll_data = nullptr;
@@ -1040,16 +1040,16 @@ namespace kiwi
 					throw std::runtime_error{ "16+ bits quantization not supported." };
 				}
 
-				restored_floats.resize(num_non_leaf_nodes * 2);
-				restored_leaf_ll.resize(num_leaf_nodes);
-				leaf_ll_data = restored_leaf_ll.data();
-				ll_data = &restored_floats[0];
-				gamma_data = &restored_floats[num_non_leaf_nodes];
+				restored_floats = make_unique<float[]>(num_non_leaf_nodes * 2);
+				restored_leaf_ll = make_unique<float[]>(num_leaf_nodes);
+				leaf_ll_data = restored_leaf_ll.get();
+				ll_data = restored_floats.get();
+				gamma_data = restored_floats.get() + num_non_leaf_nodes;
 
 				const float* ll_table = reinterpret_cast<const float*>(ptr + header.qtable_offset);
 				const float* gamma_table = ll_table + ((size_t)1 << quantized);
 
-				dequantizeDispatch(tp::gen_seq<16>{}, quantized, restored_floats, restored_leaf_ll,
+				dequantizeDispatch(tp::gen_seq<16>{}, quantized, restored_floats.get(), restored_leaf_ll.get(),
 					ptr + header.ll_offset, header.gamma_offset - header.ll_offset,
 					ptr + header.gamma_offset, header.qtable_offset - header.gamma_offset,
 					ll_table,
