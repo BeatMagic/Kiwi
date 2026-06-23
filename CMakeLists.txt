@@ -12,6 +12,7 @@ option(KIWI_BUILD_CLI  "Build CLI tool" ON)
 option(KIWI_BUILD_EVALUATOR  "Build Evaluator" ON)
 option(KIWI_BUILD_MODEL_BUILDER  "Build Model Builder" ON)
 option(KIWI_BUILD_TEST  "Build Test sets" ON)
+option(KIWI_BUILD_BENCHMARK  "Build allocator benchmark (fix/knlm-bigalloc-std-vector)" OFF)
 option(KIWI_JAVA_BINDING  "Build Java binding" OFF)
 set(KIWI_CPU_ARCH "" CACHE STRING "Set architecture type for macOS")
 
@@ -318,6 +319,10 @@ endif()
 if(KIWI_BUILD_TEST)
   add_subdirectory( third_party/googletest )
   add_subdirectory( test )
+endif()
+
+if(KIWI_BUILD_BENCHMARK)
+  add_subdirectory( benchmark )
 endif()
 
 if(KIWI_JAVA_BINDING)
